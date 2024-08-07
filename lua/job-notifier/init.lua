@@ -2,9 +2,9 @@ local M = {
   jobs = {},
   meta = {},
   stages = {
-    ["idle"] = "No job running",
-    ["start"] = "Job Started",
-    ["done"] = "Job finished",
+    ["job-idle"] = "No job running",
+    ["job-start"] = "Job Started",
+    ["job-done"] = "Job finished",
   },
 }
 
@@ -49,7 +49,7 @@ M.run = function(meta_name)
     id = 0,
     name = job_meta.name,
     stages = mergeStages(M.stages, job_meta.stages),
-    current_stage = "start",
+    current_stage = "job-start",
     log_file = job_meta.log_file,
     output = {},
   })
@@ -79,7 +79,7 @@ M.run = function(meta_name)
     on_stderr = on_output,
     on_exit = function()
       write_output_to_file(M.jobs[job_index])
-      M.jobs[job_index].current_stage = "done"
+      M.jobs[job_index].current_stage = "job-done"
     end,
   })
 end
@@ -90,7 +90,7 @@ M.stop_script = function(job_name)
   if job then
     vim.fn.jobstop(job.id)
     write_output_to_file(job)
-    job.stage = "done"
+    job.stage = "job-done"
     print("Job stopped and output saved to file")
   else
     print("No job running")
