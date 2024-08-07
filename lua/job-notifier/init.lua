@@ -1,26 +1,15 @@
 local M = {
 	job_id = nil,
-	state = nil,
+	state = "idle",
+	patterns = {
+		["idle"] = "No job running",
+		["start"] = "Job Started",
+	},
 }
 
 -- Table to store the job ID and output
 local output = {}
 local output_file = "jobOutput.txt" -- Specify your desired output file path
-local patterns = {
-	["default"] = {
-		state = 1,
-		display_text = "Job Started",
-	},
-	["Compiling"] = {
-		state = 2,
-		display_text = "Building",
-	},
-
-	["No issues found"] = {
-		state = 2,
-		display_text = "Build Successful",
-	},
-}
 
 -- Function to write output to the file
 local function write_output_to_file()
@@ -36,14 +25,12 @@ end
 
 -- Function to run the script and capture output
 M.run = function(cmd)
-	print("Starting script")
-	M.state = patterns["default"]
-	-- Function to handle output
+	M.state = "start"
 	local function on_output(id, data, event)
 		for _, line in ipairs(data) do
-			for pattern, value in pairs(patterns) do
+			for pattern, _ in pairs(M.patterns) do
 				if string.match(line, pattern) then
-					M.state = value
+					M.state = pattern
 					break
 				end
 			end
@@ -62,10 +49,9 @@ M.run = function(cmd)
 		on_stdout = on_output,
 		on_stderr = on_output,
 		on_exit = function()
-			-- Write any remaining output to the file
 			write_output_to_file()
 			M.job_id = nil
-			print("Job completed and output saved to file")
+      M.state = "idle"
 		end,
 	})
 end
@@ -88,7 +74,17 @@ M.open_output_file = function()
 end
 
 M.getState = function()
-	return M.state.display_text
+	if M.state ~= nil then
+		return M.patterns[M.state]
+	end
+end
+
+M.setup = function(opts)
+	if opts.patterns ~= nil then
+		for key, value in pairs(opts.patterns) do
+			M.patterns[key] = value
+		end
+	end
 end
 
 return M
