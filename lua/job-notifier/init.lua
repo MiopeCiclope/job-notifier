@@ -2,9 +2,9 @@ local M = {
   jobs = {},
   meta = {},
   stages = {
-    ["job-idle"] = "No job running",
-    ["job-start"] = "Job Started",
-    ["job-done"] = "Job finished",
+    ["job-idle"] = { text = "No job running" },
+    ["job-start"] = { text = "Job Started" },
+    ["job-done"] = { text = "Job finished" },
   },
 }
 
@@ -15,18 +15,6 @@ local function findByName(array, name)
     end
   end
   return nil
-end
-
--- Function to write output to the file
-local function write_output_to_file(job)
-  local file = io.open(job.log_file, "a")
-  if file then
-    for _, line in ipairs(job.output) do
-      file:write(line .. "\n")
-    end
-    file:close()
-  end
-  job.output = {}
 end
 
 local function mergeStages(default_stages, custom_stages)
@@ -57,17 +45,18 @@ M.run = function(meta_name)
   local job_index = #M.jobs
   local function on_output(id, data, event)
     for _, line in ipairs(data) do
-      for stage, _ in pairs(M.jobs[job_index].stages) do
-        if string.match(line, stage) then
-          M.jobs[job_index].current_stage = stage
+      for key, _ in pairs(M.jobs[job_index].stages) do
+        if string.match(line, key) then
+          M.jobs[job_index].current_stage = key
           break
         end
       end
 
       if line ~= "" then
-        table.insert(M.jobs[job_index].output, line)
-        if #M.jobs[job_index].output >= 100 then
-          write_output_to_file(M.jobs[job_index])
+        local file = io.open(M.jobs[job_index].log_file, "a")
+        if file then
+          file:write(line .. "\n")
+          file:close()
         end
       end
     end
@@ -78,7 +67,6 @@ M.run = function(meta_name)
     on_stdout = on_output,
     on_stderr = on_output,
     on_exit = function()
-      write_output_to_file(M.jobs[job_index])
       M.jobs[job_index].current_stage = "job-done"
     end,
   })
@@ -89,7 +77,6 @@ M.stop_script = function(job_name)
   local job = findByName(M.jobs, job_name)
   if job then
     vim.fn.jobstop(job.id)
-    write_output_to_file(job)
     job.stage = "job-done"
     print("Job stopped and output saved to file")
   else
@@ -109,11 +96,18 @@ end
 
 M.getState = function(job_name)
   local job = findByName(M.jobs, job_name)
-
   if job then
-    return job.stages[job.current_stage]
+    return job.stages[job.current_stage].text
   end
-  return "nothing..."
+  return nil
+end
+
+M.getColor = function(job_name)
+  local job = findByName(M.jobs, job_name)
+  if job then
+    return job.stages[job.current_stage].color
+  end
+  return nil
 end
 
 M.setup = function(opts)
