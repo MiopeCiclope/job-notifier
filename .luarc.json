@@ -1,8 +1,11 @@
 {
     "diagnostics.globals": [
-        "vim"
+        "vim",
+        "array",
+        "stages"
     ],
     "diagnostics.disable": [
-        "undefined-global"
+        "undefined-global",
+        "undefined-field"
     ]
 }
