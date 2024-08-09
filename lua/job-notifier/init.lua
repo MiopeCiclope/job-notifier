@@ -2,9 +2,9 @@ local M = {
   jobs = {},
   meta = {},
   stages = {
-    ["job-idle"] = { text = "No job running" },
-    ["job-start"] = { text = "Job Started" },
-    ["job-done"] = { text = "Job finished" },
+    ["job-idle"] = { text = "No job running", color = "black" },
+    ["job-start"] = { text = "Job Started", color = "black" },
+    ["job-done"] = { text = "Job finished", color = "black" },
   },
 }
 
