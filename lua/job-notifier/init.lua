@@ -1,3 +1,5 @@
+local utils = require("job-notifier.utils")
+
 local M = {
 	jobs = {},
 	meta = {},
@@ -6,35 +8,6 @@ local M = {
 		["job-done"] = { text = "Job finished", color = "black" },
 	},
 }
-
-M.findByName = function(array, name)
-	for i = 1, #array do
-		if array[i].name == name then
-			return array[i]
-		end
-	end
-	return nil
-end
-
-M.mergeStages = function(default_stages, custom_stages)
-	local result = default_stages
-	for key, value in pairs(custom_stages) do
-		result[key] = value
-	end
-	return result
-end
-
-M.saveLog = function(filename, data)
-	local file = io.open(filename, "a")
-	if file then
-		for _, line in ipairs(data) do
-			if line ~= {} then
-				file:write(line .. "\n")
-			end
-		end
-		file:close()
-	end
-end
 
 M.scan_output = function(job, data)
 	local output_data = {}
@@ -47,12 +20,12 @@ M.scan_output = function(job, data)
 			end
 		end
 	end
-	M.saveLog(job.log_file, output_data)
+	utils:saveToFile(job.log_file, output_data)
 end
 
 -- Function to run the script and capture output
 M.run = function(meta_name)
-	local job_meta = M.findByName(M.meta, meta_name)
+	local job_meta = utils:findByName(M.meta, meta_name)
 	if job_meta == nil then
 		print("No job details not found for: " .. meta_name)
 		return
@@ -61,7 +34,7 @@ M.run = function(meta_name)
 	table.insert(M.jobs, {
 		id = 0,
 		name = job_meta.name,
-		stages = M.mergeStages(M.stages, job_meta.stages),
+		stages = utils:mergeStages(M.stages, job_meta.stages),
 		current_stage = "job-start",
 		log_file = job_meta.log_file,
 		output = {},
@@ -85,7 +58,7 @@ end
 
 -- Function to stop the running job
 M.stop_script = function(job_name)
-	local job = M.findByName(M.jobs, job_name)
+	local job = utils:findByName(M.jobs, job_name)
 	if job then
 		vim.fn.jobstop(job.id)
 		job.stage = "job-done"
@@ -97,7 +70,7 @@ end
 
 -- Function to open the output file in a new buffer
 M.open_output_file = function(job_name)
-	local job = M.findByName(M.jobs, job_name)
+	local job = utils:findByName(M.jobs, job_name)
 	if job then
 		vim.api.nvim_command("edit " .. job.log_file)
 	else
@@ -106,7 +79,7 @@ M.open_output_file = function(job_name)
 end
 
 M.getState = function(job_name)
-	local job = M.findByName(M.jobs, job_name)
+	local job = utils:findByName(M.jobs, job_name)
 	if job then
 		return job.stages[job.current_stage].text
 	end
@@ -114,7 +87,7 @@ M.getState = function(job_name)
 end
 
 M.getColor = function(job_name)
-	local job = M.findByName(M.jobs, job_name)
+	local job = utils:findByName(M.jobs, job_name)
 	if job then
 		return job.stages[job.current_stage].color
 	end
