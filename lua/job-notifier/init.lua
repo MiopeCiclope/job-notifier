@@ -1,64 +1,108 @@
 local utils = require("job-notifier.utils")
 
-local M = {
-	jobs = {},
-	meta = {},
-	stages = {
-		["job-start"] = { text = "Job Started", color = "black" },
-		["job-done"] = { text = "Job finished", color = "black" },
-	},
-}
+---@class Meta
+---@field name string  @The name of the project or process
+---@field cmd string  @The command to run the process
+---@field logFile string  @The file where the log is stored
+---@field stages table<string, any>  @The stages with keys like "Compiling" and corresponding stage information
 
-M.scan_output = function(job, data)
+---@class Job
+---@field id number  @A unique identifier for the job
+---@field name string  @The name of the job, taken from the meta name
+---@field stages table<string, any>  @Merged stages from the class stages and job-specific stages
+---@field currentStage string  @The current stage of the job, initialized to "job-start"
+---@field logFile string  @The log file associated with the job, from the meta data
+---@field output table<number, any>  @A list of output entries, indexed by number
+local Job = {}
+Job.__index = Job
+
+---Constructor for Job
+---@return Job  @Returns a new instance of the class Scanner
+function Job.new(meta, defaultStages)
+	---@type Job
+	local self = setmetatable({}, Job)
+
+	self.id = 0
+	self.name = meta.name
+	self.stages = utils:mergeStages(defaultStages, meta.stages)
+	self.currentStage = "job-start"
+	self.logFile = meta.logFile
+	self.output = {}
+	return self
+end
+
+function Job:handleOutput(data)
 	local output_data = {}
 	for _, line in ipairs(data) do
 		table.insert(output_data, line)
-		for key, _ in pairs(job.stages) do
+		for key, _ in pairs(self.stages) do
 			if string.match(line, key) then
-				job.current_stage = key
+				self.currentStage = key
 				break
 			end
 		end
 	end
-	utils:saveToFile(job.log_file, output_data)
+	utils:saveToFile(self.logFile, output_data)
+end
+
+---@class Scanner
+---@field jobs table<number, Job>  @A list of jobs, indexed by a number
+---@field meta table<string, Job>  @A list of jobs, indexed by a number
+---@field stages table<string, any>  @Stages with string keys, each having a table with text and color
+local Scanner = {}
+Scanner.__index = Scanner
+
+---Constructor for M
+---@return Scanner  @Returns a new instance of the class Scanner
+function Scanner.new()
+	---@type Scanner
+	local self = setmetatable({}, Scanner)
+
+	self.jobs = {} ---@type table<number, Job>
+	self.meta = {} ---@type table<string, Meta>
+	self.stages = { ---@type table<string, any>
+		["job-start"] = { text = "Job Started", color = "black" },
+		["job-done"] = { text = "Job finished", color = "black" },
+	}
+
+	return self
+end
+
+---Adds a job to the jobs list
+---@param job Job  @The job to be added
+function Scanner:addJob(job)
+	table.insert(self.jobs, job)
 end
 
 -- Function to run the script and capture output
-M.run = function(meta_name)
-	local job_meta = utils:findByName(M.meta, meta_name)
-	if job_meta == nil then
-		print("No job details not found for: " .. meta_name)
+---@param metaName string
+function Scanner:run(metaName)
+	local meta = utils:findByName(self.meta, metaName)
+	if meta == nil then
+		print("No job details not found for: " .. metaName)
 		return
 	end
 
-	table.insert(M.jobs, {
-		id = 0,
-		name = job_meta.name,
-		stages = utils:mergeStages(M.stages, job_meta.stages),
-		current_stage = "job-start",
-		log_file = job_meta.log_file,
-		output = {},
-	})
-
-	local job_index = #M.jobs
+	self:addJob(Job.new(meta, self.stages))
+	local index = #self.jobs
 
 	-- Start the job
-	M.jobs[job_index].id = vim.fn.jobstart(job_meta.cmd, {
+	self.jobs[index].id = vim.fn.jobstart(meta.cmd, {
 		on_stdout = function(id, data, event)
-			M.scan_output(M.jobs[job_index], data)
+			self.jobs[index]:handleOutput(data)
 		end,
 		on_stderr = function(id, data, event)
-			M.scan_output(M.jobs[job_index], data)
+			self.jobs[index]:handleOutput(data)
 		end,
 		on_exit = function()
-			M.jobs[job_index].current_stage = "job-done"
+			M.jobs[job_index].currentStage = "job-done"
 		end,
 	})
 end
 
 -- Function to stop the running job
-M.stop_script = function(job_name)
-	local job = utils:findByName(M.jobs, job_name)
+function Scanner:stop(jobName)
+	local job = utils:findByName(self.jobs, jobName)
 	if job then
 		vim.fn.jobstop(job.id)
 		job.stage = "job-done"
@@ -69,35 +113,42 @@ M.stop_script = function(job_name)
 end
 
 -- Function to open the output file in a new buffer
-M.open_output_file = function(job_name)
-	local job = utils:findByName(M.jobs, job_name)
+function Scanner:showLog(jobName)
+	local job = utils:findByName(self.jobs, jobName)
 	if job then
-		vim.api.nvim_command("edit " .. job.log_file)
+		vim.api.nvim_command("edit " .. job.logFile)
 	else
-		print("No job: " .. job_name)
+		print("No job: " .. jobName)
 	end
 end
 
-M.getState = function(job_name)
-	local job = utils:findByName(M.jobs, job_name)
+function Scanner:getState(jobName)
+	local job = utils:findByName(self.jobs, jobName)
+
 	if job then
-		return job.stages[job.current_stage].text
+		return job.stages[job.currentStage].text
 	end
 	return nil
 end
 
-M.getColor = function(job_name)
-	local job = utils:findByName(M.jobs, job_name)
+function Scanner:getColor(jobName)
+	local job = utils:findByName(self.jobs, jobName)
 	if job then
-		return job.stages[job.current_stage].color
+		return job.stages[job.currentStage].color
 	end
 	return nil
 end
 
-M.setup = function(opts)
+local scanner = Scanner.new()
+
+function Scanner.setup(self, opts)
+	if self ~= scanner then
+		self = scanner
+	end
+
 	if opts ~= nil and opts.meta ~= nil then
-		M.meta = opts.meta
+		self.meta = opts.meta
 	end
 end
 
-return M
+return scanner
