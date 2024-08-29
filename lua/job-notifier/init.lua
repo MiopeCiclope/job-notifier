@@ -17,6 +17,8 @@ local Job = {}
 Job.__index = Job
 
 ---Constructor for Job
+---@param meta Meta  @The metadata of a job
+---@param defaultStages table<string, string> @The stages that all jobs should have
 ---@return Job  @Returns a new instance of the class Scanner
 function Job.new(meta, defaultStages)
 	---@type Job
@@ -31,6 +33,8 @@ function Job.new(meta, defaultStages)
 	return self
 end
 
+---Reads job log and look for stage matching
+---@param data table<any, string>  @The output of an executing job
 function Job:handleOutput(data)
 	local output_data = {}
 	for _, line in ipairs(data) do
@@ -74,7 +78,7 @@ function Scanner:addJob(job)
 	table.insert(self.jobs, job)
 end
 
--- Function to run the script and capture output
+---Run the script and capture output
 ---@param metaName string
 function Scanner:run(metaName)
 	local meta = utils:findByName(self.meta, metaName)
@@ -88,10 +92,10 @@ function Scanner:run(metaName)
 
 	-- Start the job
 	self.jobs[index].id = vim.fn.jobstart(meta.cmd, {
-		on_stdout = function(id, data, event)
+		on_stdout = function(id, data)
 			self.jobs[index]:handleOutput(data)
 		end,
-		on_stderr = function(id, data, event)
+		on_stderr = function(id, data)
 			self.jobs[index]:handleOutput(data)
 		end,
 		on_exit = function()
@@ -101,6 +105,7 @@ function Scanner:run(metaName)
 end
 
 -- Function to stop the running job
+---@param jobName string
 function Scanner:stop(jobName)
 	local job = utils:findByName(self.jobs, jobName)
 	if job then
@@ -112,7 +117,8 @@ function Scanner:stop(jobName)
 	end
 end
 
--- Function to open the output file in a new buffer
+---Open job output in a new buffer
+---@param jobName string
 function Scanner:showLog(jobName)
 	local job = utils:findByName(self.jobs, jobName)
 	if job then
@@ -122,25 +128,25 @@ function Scanner:showLog(jobName)
 	end
 end
 
-function Scanner:getState(jobName)
+---Gets job stage data
+---@param jobName string
+---@param dataKey string
+---@return any @Returns the stage data based on the datakey
+function Scanner:getStageData(jobName, dataKey)
 	local job = utils:findByName(self.jobs, jobName)
 
 	if job then
-		return job.stages[job.currentStage].text
-	end
-	return nil
-end
-
-function Scanner:getColor(jobName)
-	local job = utils:findByName(self.jobs, jobName)
-	if job then
-		return job.stages[job.currentStage].color
+		return job.stages[job.currentStage][dataKey]
 	end
 	return nil
 end
 
 local scanner = Scanner.new()
 
+---Setup plugin
+---@param self Scanner
+---@param opts table
+---@field meta Meta
 function Scanner.setup(self, opts)
 	if self ~= scanner then
 		self = scanner
