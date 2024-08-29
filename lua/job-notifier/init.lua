@@ -1,11 +1,6 @@
+require("job-notifier.meta")
 local utils = require("job-notifier.utils")
 local Job = require("job-notifier.job")
-
----@class Meta
----@field name string  @The name of the project or process
----@field cmd string  @The command to run the process
----@field logFile string  @The file where the log is stored
----@field stages table<string, any>  @The stages with keys like "Compiling" and corresponding stage information
 
 ---@class Scanner
 ---@field jobs table<number, Job>  @A list of jobs, indexed by a number
@@ -36,6 +31,21 @@ function Scanner:addJob(job)
 	table.insert(self.jobs, job)
 end
 
+---Starts a backgroud task based on meta parameters
+---@param meta Meta
+---@param job Job
+---@param handler (fun(id:number, data: table))
+---@return number @Job id
+local function createJob(meta, job, handler)
+	return vim.fn.jobstart(meta.cmd, {
+		on_stdout = handler,
+		on_stderr = handler,
+		on_exit = function()
+			job.currentStage = "job-done"
+		end,
+	})
+end
+
 ---Run the script and capture output
 ---@param metaName string
 function Scanner:run(metaName)
@@ -47,19 +57,17 @@ function Scanner:run(metaName)
 
 	self:addJob(Job.new(meta, self.stages))
 	local index = #self.jobs
+	local job = self.jobs[index]
+
+  ---Handles job output and change stages based on that
+  ---@param id number
+  ---@param data table
+	local function handleJobOutput(id, data)
+		job:handleOutput(data)
+	end
 
 	-- Start the job
-	self.jobs[index].id = vim.fn.jobstart(meta.cmd, {
-		on_stdout = function(id, data)
-			self.jobs[index]:handleOutput(data)
-		end,
-		on_stderr = function(id, data)
-			self.jobs[index]:handleOutput(data)
-		end,
-		on_exit = function()
-			self.jobs[index].currentStage = "job-done"
-		end,
-	})
+	job.id = createJob(meta, job, handleJobOutput)
 end
 
 -- Function to stop the running job
