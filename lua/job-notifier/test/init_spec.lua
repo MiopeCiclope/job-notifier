@@ -7,7 +7,7 @@ local opt_meta = {
 	{
 		name = "test",
 		cmd = "echo test",
-		log_file = "test.txt",
+		logFile = "test.txt",
 		stages = {
 			["test"] = {
 				text = "running",
@@ -23,7 +23,7 @@ describe("Setup", function()
 	end)
 
 	it("should setup with no parameters", function()
-		scanner.setup()
+		scanner:setup()
 
 		eq({}, scanner.meta)
 		eq({
@@ -33,10 +33,11 @@ describe("Setup", function()
 	end)
 
 	it("should store job metadata", function()
-		scanner.setup({
+		scanner:setup({
 			meta = opt_meta,
 		})
 
+		print(scanner.meta[""])
 		eq(opt_meta, scanner.meta)
 	end)
 
@@ -46,22 +47,22 @@ end)
 describe("Start", function()
 	before_each(function()
 		scanner = require("job-notifier")
-		scanner.setup(opt_meta)
+		scanner:setup(opt_meta)
 	end)
 
 	it("should't run if no job found", function()
 		eq({}, scanner.jobs)
-		scanner.run("fail")
+		scanner:run("fail")
 
 		eq({}, scanner.jobs)
 	end)
 
 	it("should run command", function()
 		eq({}, scanner.jobs)
-		scanner.run("test")
+		scanner:run("test")
 
 		eq("test", scanner.jobs[1].name)
-		eq("job-start", scanner.jobs[1].current_stage)
+		eq("job-start", scanner.jobs[1].currentStage)
 	end)
 
 	cleanUp()
@@ -70,20 +71,20 @@ end)
 describe("Scan job", function()
 	before_each(function()
 		scanner = require("job-notifier")
-		scanner.setup(opt_meta)
-		scanner.run("test")
+		scanner:setup(opt_meta)
+		scanner:run("test")
 	end)
 
 	it("should keep job stage case no keyword is found", function()
-		scanner.scan_output(scanner.jobs[1], { "output no keywords" })
+		scanner.jobs[1]:handleOutput({ "output no keywords" })
 
-		eq(scanner.jobs[1].current_stage, "job-start")
+		eq(scanner.jobs[1].currentStage, "job-start")
 	end)
 
 	it("should change job stage when finds keywords", function()
-		scanner.scan_output(scanner.jobs[1], { "output test" })
+		scanner.jobs[1]:handleOutput({ "output test" })
 
-		eq(scanner.jobs[1].current_stage, "test")
+		eq(scanner.jobs[1].currentStage, "test")
 	end)
 
 	cleanUp()
@@ -92,21 +93,19 @@ end)
 describe("Stop job", function()
 	before_each(function()
 		scanner = require("job-notifier")
-		scanner.setup(opt_meta)
+		scanner:setup(opt_meta)
 	end)
 
 	it("should stop running job", function()
-		scanner.run("test")
+		scanner:run("test")
 
-		awaitEqual(scanner.jobs[1].current_stage, "test")
-		eq(scanner.jobs[1].current_stage, "test")
-		scanner.stop_script("test")
+		awaitEqual(scanner.jobs[1].currentStage, "test")
+		eq(scanner.jobs[1].currentStage, "test")
+		scanner:stop("test")
 
-		awaitEqual(scanner.jobs[1].current_stage, "job-done")
-		eq(scanner.jobs[1].current_stage, "job-done")
+		awaitEqual(scanner.jobs[1].currentStage, "job-done")
+		eq(scanner.jobs[1].currentStage, "job-done")
 	end)
 
 	cleanUp()
 end)
-
-

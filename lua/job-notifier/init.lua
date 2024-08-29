@@ -95,7 +95,7 @@ function Scanner:run(metaName)
 			self.jobs[index]:handleOutput(data)
 		end,
 		on_exit = function()
-			M.jobs[job_index].currentStage = "job-done"
+			self.jobs[index].currentStage = "job-done"
 		end,
 	})
 end
