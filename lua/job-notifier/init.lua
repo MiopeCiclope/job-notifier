@@ -50,15 +50,22 @@ end
 ---Run the script and capture output
 ---@param metaName string
 function Scanner:run(metaName)
+  ---@type Meta?
   local meta = utils:findByName(self.meta, metaName)
   if meta == nil then
     print("No job details not found for: " .. metaName)
     return
   end
 
-  self:addJob(Job.new(meta, self.stages))
-  local index = #self.jobs
-  local job = self.jobs[index]
+  ---@type Job?
+  local job = utils:findByName(self.jobs, metaName)
+  if job == nil then
+    self:addJob(Job.new(meta, self.stages))
+    local index = #self.jobs
+    job = self.jobs[index]
+  else
+    job.currentStage = "job-start"
+  end
 
   ---Handles job output and change stages based on that
   ---@param id number
@@ -75,10 +82,12 @@ end
 -- Function to stop the running job
 ---@param jobName string
 function Scanner:stop(jobName)
+  ---@type Job?
   local job = utils:findByName(self.jobs, jobName)
   if job then
     vim.fn.jobstop(job.id)
-    job.stage = "job-done"
+    job.currentStage = "job-done"
+    job.isRunning = false
     print("Job stopped and output saved to file")
   else
     print("No job running")
@@ -88,6 +97,7 @@ end
 ---Open job output in a new buffer
 ---@param jobName string
 function Scanner:showLog(jobName)
+  ---@type Job?
   local job = utils:findByName(self.jobs, jobName)
   if job then
     vim.api.nvim_command("edit " .. job.logFile)
@@ -101,6 +111,7 @@ end
 ---@param dataKey string
 ---@return any @Returns the stage data based on the datakey
 function Scanner:getStageData(jobName, dataKey)
+  ---@type Job?
   local job = utils:findByName(self.jobs, jobName)
 
   if job then
