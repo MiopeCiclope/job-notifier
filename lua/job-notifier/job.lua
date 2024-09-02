@@ -7,6 +7,7 @@ local utils = require("job-notifier.utils")
 ---@field currentStage string  @The current stage of the job, initialized to "job-start"
 ---@field logFile string  @The log file associated with the job, from the meta data
 ---@field output table<number, any>  @A list of output entries, indexed by number
+---@field isRunning boolean @Tell is this specific job is running or not
 local Job = {}
 Job.__index = Job
 
@@ -24,6 +25,7 @@ function Job.new(meta, defaultStages)
 	self.currentStage = "job-start"
 	self.logFile = meta.logFile
 	self.output = {}
+	self.isRunning = false
 	return self
 end
 

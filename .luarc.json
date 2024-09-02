@@ -6,6 +6,7 @@
     ],
     "diagnostics.disable": [
         "undefined-global",
-        "undefined-field"
+        "undefined-field",
+        "need-check-nil"
     ]
 }
