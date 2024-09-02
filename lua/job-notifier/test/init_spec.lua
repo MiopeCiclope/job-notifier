@@ -37,7 +37,6 @@ describe("Setup", function()
 			meta = opt_meta,
 		})
 
-		print(scanner.meta[""])
 		eq(opt_meta, scanner.meta)
 	end)
 

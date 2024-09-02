@@ -59,9 +59,9 @@ function Scanner:run(metaName)
 	local index = #self.jobs
 	local job = self.jobs[index]
 
-  ---Handles job output and change stages based on that
-  ---@param id number
-  ---@param data table
+	---Handles job output and change stages based on that
+	---@param id number
+	---@param data table
 	local function handleJobOutput(id, data)
 		job:handleOutput(data)
 	end
@@ -109,6 +109,34 @@ end
 
 local scanner = Scanner.new()
 
+local function getCompletion(jobScanner, argLead)
+	local completionAvailable = jobScanner.meta
+	if completionAvailable == nil then
+		return nil
+	end
+
+	local matches = {}
+	for _, metaData in ipairs(completionAvailable) do
+		if metaData.name:sub(1, #argLead):lower() == argLead:lower() then
+			table.insert(matches, metaData.name)
+		end
+	end
+
+	return matches
+end
+
+local function createCommand(jobScanner)
+	vim.api.nvim_create_user_command("RunJob", function(opts)
+		jobScanner:run(opts.args)
+	end, {
+		nargs = 1,
+		complete = function(ArgLead, CmdLine, CursorPos)
+			return getCompletion(jobScanner, ArgLead)
+		end,
+		desc = "Run a job in the background",
+	})
+end
+
 ---Setup plugin
 ---@param self? Scanner
 ---@param opts? table
@@ -121,6 +149,8 @@ function Scanner.setup(self, opts)
 	if opts ~= nil and opts.meta ~= nil then
 		self.meta = opts.meta
 	end
+
+	createCommand(self)
 end
 
 return scanner
