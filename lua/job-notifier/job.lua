@@ -42,7 +42,12 @@ function Job:handleOutput(data)
 			end
 		end
 	end
-	utils:saveToFile(self.logFile, output_data)
+	utils:saveToFile(self:getLogPath(), output_data)
+end
+
+function Job:getLogPath()
+	local dataDir = vim.fn.stdpath("data")
+	return dataDir .. "/" .. self.name
 end
 
 return Job
