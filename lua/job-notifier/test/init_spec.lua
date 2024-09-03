@@ -97,8 +97,8 @@ describe("Stop job", function()
 
 	it("should stop running job", function()
 		scanner:run("test")
+		scanner.jobs[1]:handleOutput({ "output test" })
 
-		awaitEqual(scanner.jobs[1].currentStage, "test")
 		eq(scanner.jobs[1].currentStage, "test")
 		scanner:stop("test")
 
