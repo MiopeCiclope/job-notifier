@@ -1,6 +1,10 @@
 local eq = assert.are.same
 local neq = assert.are_not.same
 local cleanUp = require("job-notifier.test-utils").cleanUp
+local mockFileCreation = require("job-notifier.test-utils").mockFileCreation
+local M = {
+	mkdirCalled = false,
+}
 
 -- @type Utils
 local utils = require("job-notifier.utils")
@@ -75,5 +79,32 @@ describe("saveLog", function()
 
 		local fileAfter = io.open("test.txt", "r")
 		neq(fileAfter, nil)
+	end)
+end)
+
+describe("createDir", function()
+	local fn = mockFileCreation(M)
+
+	it("should create dir when it doesn't exist", function()
+		fn.fnamemodify.returns("/path")
+		fn.isdirectory.returns(0)
+
+		utils:createDir("/path/file.txt")
+
+		assert.stub(fn.fnamemodify).was_called_with("/path/file.txt", ":h")
+		assert.stub(fn.isdirectory).was_called_with("/path")
+		assert.stub(fn.mkdir).was_called_with("/path", "p")
+		eq(M.mkdirCalled, true)
+	end)
+
+	it("should NOT create dir when it exist", function()
+		fn.fnamemodify.returns("/path")
+		fn.isdirectory.returns(1)
+
+		utils:createDir("/path/file.txt")
+
+		assert.stub(fn.fnamemodify).was_called_with("/path/file.txt", ":h")
+		assert.stub(fn.isdirectory).was_called_with("/path")
+		eq(M.mkdirCalled, false)
 	end)
 end)

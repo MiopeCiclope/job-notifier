@@ -50,7 +50,7 @@ end
 function Utils:createDir(path)
 	local dirPath = vim.fn.fnamemodify(path, ":h")
 	if vim.fn.isdirectory(dirPath) == 0 then
-		vim.fn.mkdir(newDir, "p")
+		vim.fn.mkdir(dirPath, "p")
 	end
 end
 
