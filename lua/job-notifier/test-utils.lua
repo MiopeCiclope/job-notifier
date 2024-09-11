@@ -18,27 +18,46 @@ M.cleanUp = function()
 end
 
 ---Mock functions related to create files
----@param dirData any
-M.mockFileCreation = function(dirData)
+M.setupDirMock = function()
 	local fn = vim.fn
-	dirData.mkdirCalled = false
-
-	before_each(function()
-		dirData.mkdirCalled = false
-		fn.fnamemodify = mock(vim.fn.fnamemodify, true)
-		fn.isdirectory = mock(vim.fn.isdirectory, true)
-		fn.mkdir = mock(function(path, opts)
-			dirData.mkdirCalled = true
-		end)
-	end)
-
-	after_each(function()
-		mock.revert(fn.fnamemodify)
-		mock.revert(fn.isdirectory)
-		mock.revert(fn.mkdir)
-	end)
+	fn.fnamemodify = mock(vim.fn.fnamemodify, true)
+	fn.isdirectory = mock(vim.fn.isdirectory, true)
+	fn.mkdir = mock(function(path, opts) end)
 
 	return fn
+end
+
+---Remove mocked dir functions
+---@param fn any
+M.cleanUpDirMock = function(fn)
+	fn.fnamemodify:revert()
+	fn.isdirectory:revert()
+	fn.mkdir:revert()
+end
+
+---Mock file creation
+M.setupFileMock = function()
+	local mockFile, mockIo
+	mockFile = {
+		write = function() end,
+		close = function() end,
+	}
+
+	mockIo = mock(io, true)
+	mockIo.open.returns(mockFile)
+
+	mockFile.write = mock(mockFile.write, true)
+	mockFile.close = mock(mockFile.close, true)
+	return mockFile, mockIo
+end
+
+---Clean up mock file creation functions
+---@param mockFile any
+---@param mockIo any
+M.cleanUpFileMock = function(mockFile, mockIo)
+	mockIo.open:revert()
+	mockFile.write:revert()
+	mockFile.close:revert()
 end
 
 return M

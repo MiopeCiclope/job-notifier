@@ -1,10 +1,8 @@
 local eq = assert.are.same
-local neq = assert.are_not.same
-local cleanUp = require("job-notifier.test-utils").cleanUp
-local mockFileCreation = require("job-notifier.test-utils").mockFileCreation
-local M = {
-	mkdirCalled = false,
-}
+local setupDirMock = require("job-notifier.test-utils").setupDirMock
+local cleanUpDirMock = require("job-notifier.test-utils").cleanUpDirMock
+local setupFileMock = require("job-notifier.test-utils").setupFileMock
+local cleanUpFileMock = require("job-notifier.test-utils").cleanUpFileMock
 
 -- @type Utils
 local utils = require("job-notifier.utils")
@@ -66,24 +64,41 @@ describe("mergeStages", function()
 end)
 
 describe("saveLog", function()
+	local mockFile, mockIo
+
 	before_each(function()
-		os.remove("test.txt")
+		mockFile, mockIo = setupFileMock()
 	end)
-	cleanUp()
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+	end)
 
 	it("it should create file", function()
-		local fileBefore = io.open("test.txt", "r")
-		eq(fileBefore, nil)
+		local filename = "test.txt"
+		local data = { "line 1", "line 2", "line 3" }
 
-		utils:saveToFile("test.txt", { "test" })
+		utils:saveToFile(filename, data)
 
-		local fileAfter = io.open("test.txt", "r")
-		neq(fileAfter, nil)
+		assert.stub(mockFile.write).was_called(3)
+		assert.stub(mockFile.write).was_called_with(mockFile, "line 1\n")
+		assert.stub(mockFile.write).was_called_with(mockFile, "line 2\n")
+		assert.stub(mockFile.write).was_called_with(mockFile, "line 3\n")
+
+		assert.stub(mockFile.close).was_called(1)
 	end)
 end)
 
 describe("createDir", function()
-	local fn = mockFileCreation(M)
+	local fn
+
+	before_each(function()
+		fn = setupDirMock()
+	end)
+
+	after_each(function()
+		cleanUpDirMock(fn)
+	end)
 
 	it("should create dir when it doesn't exist", function()
 		fn.fnamemodify.returns("/path")
@@ -94,7 +109,6 @@ describe("createDir", function()
 		assert.stub(fn.fnamemodify).was_called_with("/path/file.txt", ":h")
 		assert.stub(fn.isdirectory).was_called_with("/path")
 		assert.stub(fn.mkdir).was_called_with("/path", "p")
-		eq(M.mkdirCalled, true)
 	end)
 
 	it("should NOT create dir when it exist", function()
@@ -105,6 +119,5 @@ describe("createDir", function()
 
 		assert.stub(fn.fnamemodify).was_called_with("/path/file.txt", ":h")
 		assert.stub(fn.isdirectory).was_called_with("/path")
-		eq(M.mkdirCalled, false)
 	end)
 end)

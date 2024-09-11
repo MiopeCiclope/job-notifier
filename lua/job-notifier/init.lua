@@ -147,6 +147,11 @@ function Scanner.setup(self, opts)
 	command.createCommand("StopJob", metaList, function(args)
 		self:stop(args)
 	end)
+
+	command.createCommand("LogJob", metaList, function(args)
+		self:showLog(args)
+	end)
+
 end
 
 return scanner
