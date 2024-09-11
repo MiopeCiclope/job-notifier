@@ -1,7 +1,10 @@
 local eq = assert.are.same
-local cleanUp = require("job-notifier.test-utils").cleanUp
-
 local Job = require("job-notifier.job")
+local setupDirMock = require("job-notifier.test-utils").setupDirMock
+local cleanUpDirMock = require("job-notifier.test-utils").cleanUpDirMock
+local setupFileMock = require("job-notifier.test-utils").setupFileMock
+local cleanUpFileMock = require("job-notifier.test-utils").cleanUpFileMock
+
 local meta = {
 	name = "test",
 	cmd = "echo test",
@@ -22,8 +25,18 @@ local defaultStages = {
 local job = Job.new(meta, defaultStages)
 
 describe("Job", function()
+	local mockFile, mockIo
+	local fn
+
 	before_each(function()
 		job = Job.new(meta, defaultStages)
+		mockFile, mockIo = setupFileMock()
+		fn = setupDirMock()
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
 	end)
 
 	it("should keep job stage case no keyword is found", function()
@@ -37,6 +50,4 @@ describe("Job", function()
 
 		eq(job.currentStage, "test")
 	end)
-
-	cleanUp()
 end)

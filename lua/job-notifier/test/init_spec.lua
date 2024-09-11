@@ -1,6 +1,9 @@
 local eq = assert.are.same
 local awaitEqual = require("job-notifier.test-utils").awaitUntilEqual
-local cleanUp = require("job-notifier.test-utils").cleanUp
+local setupDirMock = require("job-notifier.test-utils").setupDirMock
+local cleanUpDirMock = require("job-notifier.test-utils").cleanUpDirMock
+local setupFileMock = require("job-notifier.test-utils").setupFileMock
+local cleanUpFileMock = require("job-notifier.test-utils").cleanUpFileMock
 
 local scanner = require("job-notifier")
 local opt_meta = {
@@ -18,8 +21,19 @@ local opt_meta = {
 }
 
 describe("Setup", function()
+	local mockFile, mockIo
+	local fn
+
 	before_each(function()
+		mockFile, mockIo = setupFileMock()
+		fn = setupDirMock()
+
 		scanner = require("job-notifier")
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
 	end)
 
 	it("should setup with no parameters", function()
@@ -39,14 +53,23 @@ describe("Setup", function()
 
 		eq(opt_meta, scanner.meta)
 	end)
-
-	cleanUp()
 end)
 
 describe("Start", function()
+	local mockFile, mockIo
+	local fn
+
 	before_each(function()
+		mockFile, mockIo = setupFileMock()
+		fn = setupDirMock()
+
 		scanner = require("job-notifier")
 		scanner:setup(opt_meta)
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
 	end)
 
 	it("should't run if no job found", function()
@@ -63,15 +86,24 @@ describe("Start", function()
 		eq("test", scanner.jobs[1].name)
 		eq("job-start", scanner.jobs[1].currentStage)
 	end)
-
-	cleanUp()
 end)
 
 describe("Scan job", function()
+	local mockFile, mockIo
+	local fn
+
 	before_each(function()
+		mockFile, mockIo = setupFileMock()
+		fn = setupDirMock()
+
 		scanner = require("job-notifier")
 		scanner:setup(opt_meta)
 		scanner:run("test")
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
 	end)
 
 	it("should keep job stage case no keyword is found", function()
@@ -85,14 +117,23 @@ describe("Scan job", function()
 
 		eq(scanner.jobs[1].currentStage, "test")
 	end)
-
-	cleanUp()
 end)
 
 describe("Stop job", function()
+	local mockFile, mockIo
+	local fn
+
 	before_each(function()
+		mockFile, mockIo = setupFileMock()
+		fn = setupDirMock()
+
 		scanner = require("job-notifier")
 		scanner:setup(opt_meta)
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
 	end)
 
 	it("should stop running job", function()
@@ -105,6 +146,4 @@ describe("Stop job", function()
 		awaitEqual(scanner.jobs[1].currentStage, "job-done")
 		eq(scanner.jobs[1].currentStage, "job-done")
 	end)
-
-	cleanUp()
 end)

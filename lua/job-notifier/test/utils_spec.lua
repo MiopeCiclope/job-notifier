@@ -91,7 +91,6 @@ end)
 
 describe("createDir", function()
 	local fn
-
 	before_each(function()
 		fn = setupDirMock()
 	end)

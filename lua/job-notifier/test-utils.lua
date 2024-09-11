@@ -11,12 +11,6 @@ M.awaitUntilEqual = function(a, b)
 	end
 end
 
-M.cleanUp = function()
-	after_each(function()
-		os.remove("test.txt")
-	end)
-end
-
 ---Mock functions related to create files
 M.setupDirMock = function()
 	local fn = vim.fn
