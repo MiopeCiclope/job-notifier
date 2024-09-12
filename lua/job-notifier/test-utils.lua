@@ -17,6 +17,10 @@ M.setupDirMock = function()
 	fn.fnamemodify = mock(vim.fn.fnamemodify, true)
 	fn.isdirectory = mock(vim.fn.isdirectory, true)
 	fn.mkdir = mock(function(path, opts) end)
+	fn.stdpath = mock(vim.fn.stdpath, true)
+	fn.stdpath = mock(function()
+		return "root"
+	end)
 
 	return fn
 end
@@ -27,6 +31,7 @@ M.cleanUpDirMock = function(fn)
 	fn.fnamemodify:revert()
 	fn.isdirectory:revert()
 	fn.mkdir:revert()
+	fn.stdpath:revert()
 end
 
 ---Mock file creation

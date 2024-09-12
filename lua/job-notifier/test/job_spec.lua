@@ -5,6 +5,9 @@ local cleanUpDirMock = require("job-notifier.test-utils").cleanUpDirMock
 local setupFileMock = require("job-notifier.test-utils").setupFileMock
 local cleanUpFileMock = require("job-notifier.test-utils").cleanUpFileMock
 
+local mock = require("luassert.mock")
+local utils = require("job-notifier.utils")
+
 local meta = {
 	name = "test",
 	cmd = "echo test",
@@ -49,5 +52,21 @@ describe("Job", function()
 		job:handleOutput({ "output test" })
 
 		eq(job.currentStage, "test")
+	end)
+
+	it("should create log file", function()
+		local utilsMock
+		utilsMock = mock(utils)
+		utilsMock.saveToFile = mock(utils.saveToFile, true)
+
+		job:handleOutput({ "output test" })
+
+		assert.stub(utilsMock.saveToFile).was_called(1)
+		eq(job.currentStage, "test")
+	end)
+
+	it("should return job folder path", function()
+		local path = job:getLogPath()
+		eq(path, "root/job-scanner/" .. job.name)
 	end)
 end)
