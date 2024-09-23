@@ -5,12 +5,12 @@ local cleanUpDirMock = require("job-notifier.test-utils").cleanUpDirMock
 local setupFileMock = require("job-notifier.test-utils").setupFileMock
 local cleanUpFileMock = require("job-notifier.test-utils").cleanUpFileMock
 
+local mock = require("luassert.mock")
 local scanner = require("job-notifier")
 local opt_meta = {
 	{
 		name = "test",
 		cmd = "echo test",
-		logFile = "test.txt",
 		stages = {
 			["test"] = {
 				text = "running",
@@ -145,5 +145,72 @@ describe("Stop job", function()
 
 		awaitEqual(scanner.jobs[1].currentStage, "job-done")
 		eq(scanner.jobs[1].currentStage, "job-done")
+	end)
+end)
+
+describe("Create Job", function()
+	local mockFile, mockIo
+	local fn
+
+	before_each(function()
+		mockFile, mockIo = setupFileMock()
+		fn = setupDirMock()
+		fn.jobstart = mock(vim.fn.jobstart, true)
+
+		scanner = require("job-notifier")
+		scanner:setup(opt_meta)
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
+	end)
+
+	it("should start a background job", function()
+		scanner:createJob(opt_meta, scanner.jobs[1], function() end)
+
+		assert.stub(fn.jobstart).was_called(1)
+	end)
+end)
+
+describe("Show Logs", function()
+	local mockFile, mockIo
+	local fn
+	local mockVimApi
+
+	before_each(function()
+		mockFile, mockIo = setupFileMock()
+		mockVimApi = vim.api
+
+		fn = setupDirMock()
+		mockVimApi.nvim_command = mock(vim.api.nvim_command, true)
+
+		scanner = require("job-notifier")
+		scanner:setup(opt_meta)
+	end)
+
+	after_each(function()
+		cleanUpFileMock(mockFile, mockIo)
+		cleanUpDirMock(fn)
+		mockVimApi.nvim_command:revert()
+	end)
+
+	it("should not open log when job not found", function()
+		local jobName = "fail"
+
+		scanner:showLog(jobName)
+		assert.stub(mockVimApi.nvim_command).was_called(0)
+	end)
+
+	it("should show log of running job", function()
+		local jobName = "test"
+
+		scanner:showLog(jobName)
+		assert.stub(mockVimApi.nvim_command).was_called(0)
+
+		scanner:run(jobName)
+		scanner:showLog(jobName)
+		assert.stub(mockVimApi.nvim_command).was_called(1)
+		assert.stub(mockVimApi.nvim_command).was_called_with("edit root/job-scanner/test/test.log")
 	end)
 end)

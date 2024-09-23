@@ -1,4 +1,4 @@
-TEST_FILE ?=lua/job-notifier/test/job_spec.lua
+TEST_FILE ?=lua/job-notifier/test/init_spec.lua
 
 test:
 	nvim --headless --noplugin -u scripts/minimal.vim \

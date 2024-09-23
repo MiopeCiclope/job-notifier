@@ -23,7 +23,7 @@ function M.createCommand(jobName, completionList, job)
   vim.api.nvim_create_user_command(jobName, function(opts)
     job(opts.args)
   end, {
-    nargs = 1,
+    nargs = "?",
     complete = function(ArgLead, CmdLine, CursorPos)
       return M.getCompletion(completionList, ArgLead)
     end,

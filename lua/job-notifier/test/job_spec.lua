@@ -11,7 +11,6 @@ local utils = require("job-notifier.utils")
 local meta = {
 	name = "test",
 	cmd = "echo test",
-	logFile = "test.txt",
 	stages = {
 		["test"] = {
 			text = "running",
@@ -67,6 +66,6 @@ describe("Job", function()
 
 	it("should return job folder path", function()
 		local path = job:getLogPath()
-		eq(path, "root/job-scanner/" .. job.name)
+		eq(path, "root/job-scanner/" .. job.name .. "/")
 	end)
 end)

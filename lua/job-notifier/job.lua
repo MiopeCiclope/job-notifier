@@ -5,7 +5,6 @@ local utils = require("job-notifier.utils")
 ---@field name string  @The name of the job, taken from the meta name
 ---@field stages table<string, any>  @Merged stages from the class stages and job-specific stages
 ---@field currentStage string  @The current stage of the job, initialized to "job-start"
----@field logFile string  @The log file associated with the job, from the meta data
 ---@field output table<number, any>  @A list of output entries, indexed by number
 ---@field isRunning boolean @Tell is this specific job is running or not
 local Job = {}
@@ -23,7 +22,6 @@ function Job.new(meta, defaultStages)
 	self.name = meta.name
 	self.stages = utils:mergeStages(defaultStages, meta.stages)
 	self.currentStage = "job-start"
-	self.logFile = meta.logFile
 	self.output = {}
 	self.isRunning = false
 	return self
@@ -42,12 +40,14 @@ function Job:handleOutput(data)
 			end
 		end
 	end
-	utils:saveToFile(self:getLogPath() .. self.name .. ".log", output_data)
+
+	local formatted_time = os.date("%Y%m%d")
+	utils:saveToFile(self:getLogPath() .. formatted_time .. ".log", output_data)
 end
 
 function Job:getLogPath()
 	local dataDir = vim.fn.stdpath("data")
-	return dataDir .. "/job-scanner/" .. self.name
+	return dataDir .. "/job-scanner/" .. self.name .. "/"
 end
 
 return Job
