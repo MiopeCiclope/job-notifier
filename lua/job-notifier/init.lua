@@ -2,6 +2,7 @@ require("job-notifier.meta")
 local utils = require("job-notifier.utils")
 local Job = require("job-notifier.job")
 local command = require("job-notifier.command")
+local ui = require("job-notifier.ui")
 
 ---@class Scanner
 ---@field jobs table<number, Job>  @A list of jobs, indexed by a number
@@ -162,6 +163,15 @@ function Scanner.setup(self, opts)
     self:stop("watcher")
     self:stop("react")
   end)
+
+  vim.api.nvim_create_user_command("Qwer",
+    function()
+      ui.listLogs()
+    end
+    , {
+      nargs = 0,
+      desc = "testin",
+    })
 end
 
 return scanner
