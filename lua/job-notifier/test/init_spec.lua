@@ -6,6 +6,17 @@ local setupFileMock = require("job-notifier.test-utils").setupFileMock
 local cleanUpFileMock = require("job-notifier.test-utils").cleanUpFileMock
 
 local mock = require("luassert.mock")
+
+-- Mock the UI module before requiring the scanner
+local mock_ui = mock({
+	notify = function() end,
+	update_status = function() end,
+	-- Add any other UI functions your scanner uses
+}, true)
+
+package.preload["job-notifier.ui"] = function()
+	return mock_ui
+end
 local scanner = require("job-notifier")
 local opt_meta = {
 	{
@@ -211,6 +222,10 @@ describe("Show Logs", function()
 		scanner:run(jobName)
 		scanner:showLog(jobName)
 		assert.stub(mockVimApi.nvim_command).was_called(1)
-		assert.stub(mockVimApi.nvim_command).was_called_with("edit root/job-scanner/test/test.log")
+
+		local formatted_time = os.date("%Y%m%d")
+		assert
+			.stub(mockVimApi.nvim_command)
+			.was_called_with("edit root/job-scanner/test/" .. formatted_time .. ".log")
 	end)
 end)
