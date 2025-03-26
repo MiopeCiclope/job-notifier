@@ -101,6 +101,8 @@ end
 function Scanner:showLog(jobName)
   ---@type Job?
   local job = utils:findByName(self.jobs, jobName)
+  print("job name" .. jobName)
+
   if job and job.isRunning then
     local formatted_time = os.date("%Y%m%d")
     vim.api.nvim_command("edit " .. job:getLogPath() .. formatted_time .. ".log")
@@ -164,14 +166,12 @@ function Scanner.setup(self, opts)
     self:stop("react")
   end)
 
-  vim.api.nvim_create_user_command("Qwer",
-    function()
-      ui.listLogs()
-    end
-    , {
-      nargs = 0,
-      desc = "testin",
-    })
+  vim.api.nvim_create_user_command("LogUI", function()
+    ui.listLogs()
+  end, {
+    nargs = 0,
+    desc = "testin",
+  })
 end
 
 return scanner
